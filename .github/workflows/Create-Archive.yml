@@ -1,0 +1,68 @@
+# name: CreateArchive
+# on: [push]
+# jobs:
+#   build:
+#     runs-on: ubuntu-latest
+#     steps:
+#       - uses: actions/checkout@v1
+#       - name: Zip Folder
+#         run: zip -r NGGTP.zip . -x ".git/*" ".github/*"
+#       - name: Upload artifact 1
+#         uses: actions/upload-artifact@v3
+#         with:
+#           name: NGGTP.zip
+#           path: NGGTP.zip
+#       - name: Upload to Cumulonimbus
+#         uses: wei/curl@v1
+#         with:
+#           args: '-X POST -H "Authorization: $CUMULONIMBUS_TOKEN" -F file=@NGGTP.zip https://alekeagle.me/api/upload'
+#         # run: 'curl -X POST -H "Authorization: $CUMULONIMBUS_TOKEN" -F file=@NGGTP.zip https://alekeagle.me/api/upload'
+#       - name: Upload artifact 2
+#         uses: actions/upload-artifact@v3
+#         with:
+#           name: output.txt
+#           path: output.txt
+
+#Until that gets fixed here's our workaround
+#Shamelessly stolen from https://github.com/AlekEagle/Alerk/blob/master/.github/workflows/zip-release.yml
+name: Package the funny.
+
+# Controls when the workflow will run
+on:
+  # Triggers the workflow on push or pull request events but only for the master branch
+  push:
+    branches: [main]
+
+  # Allows you to run this workflow manually from the Actions tab
+  workflow_dispatch:
+
+# A workflow run is made up of one or more jobs that can run sequentially or in parallel
+jobs:
+  # This workflow contains a single job called "build"
+  build:
+    # The type of runner that the job will run on
+    runs-on: ubuntu-latest
+
+    # Steps represent a sequence of tasks that will be executed as part of the job
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v2
+
+      - name: Zip Folder
+        run: zip -r NGGTP.zip . -x ".git/*" ".github/*"
+
+      - name: Remove Old Release
+        uses: dev-drprasad/delete-tag-and-release@v0.2.0
+        with:
+          delete_release: true
+          tag_name: latest
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Create Release
+        uses: ncipollo/release-action@v1
+        with:
+          artifacts: "NGGTP.zip"
+          tag: latest
+          bodyFile: "README.md"
+          token: ${{ secrets.GITHUB_TOKEN }}
